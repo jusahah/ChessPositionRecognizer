@@ -4,11 +4,17 @@ var Promise = require('bluebird');
 var positionAI = require('../positionAI/entry')();
 
 // Chessbase images have 20 px margin on all sides.
+
+var initialPosition = {
+	path: __dirname + '/testpositions/initial.jpg', 
+	fen : 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR'
+};
+
 var imagesToFens = [
-	{path: __dirname + '/testpositions/test1.jpg', fen : 'fen1'},
-	{path: __dirname + '/testpositions/test1.jpg', fen : 'fen1'},
-	{path: __dirname + '/testpositions/test3.jpg', fen : 'fen2'},
-	{path: __dirname + '/testpositions/test4.jpg', fen : 'fen1'}
+	{path: __dirname + '/testpositions/test3.jpg', fen : 'rnbqkbnr/ppppp1pp/8/5p2/3P1B2/8/PPP1PPPP/RN1QKBNR'},
+	//{path: __dirname + '/testpositions/test1.jpg', fen : 'fen1'},
+	//{path: __dirname + '/testpositions/test3.jpg', fen : 'fen2'},
+	//{path: __dirname + '/testpositions/test4.jpg', fen : 'fen1'}
 ];
 
 function testImageToFenConversion(obj) {
@@ -39,15 +45,33 @@ function testImageToFenConversion(obj) {
 	
 }
 
-Promise.resolve(imagesToFens)
-.each(testImageToFenConversion)
-.then(function() {
-	console.log("----TESTS SUCCEED----");
-})
-.catch(function(error) {
-	console.error("----TESTS FAILED----");
-	throw error;
-});
+
+function startUp() {
+	positionAI.learnFromInitial(initialPosition.path)
+	.then(runTests)
+	.catch(function(err) {
+		console.log("Initial training failed");
+		throw err;
+	})
+
+}
+
+function runTests() {
+
+	Promise.resolve(imagesToFens)
+	.each(testImageToFenConversion)
+	.then(function() {
+		console.log("----TESTS SUCCEED----");
+	})
+	.catch(function(error) {
+		console.error("----TESTS FAILED----");
+		throw error;
+	});	
+}
+
+startUp();
+
+
 
 
 /*
