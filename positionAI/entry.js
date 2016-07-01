@@ -4,12 +4,14 @@ var lwip = require('lwip');
 var positionConcluder = require('./positionConcluder');
 var featureAnalyzer   = require('./featureAnalyzer');
 
+var intensityThreshold = 15;
+
 module.exports = function() {
 
 	var learnedPieceExemplars = null;
 
 	return {
-
+		// "Training" is done from just one position - initial position with extra queen + king
 		learnFromInitial: function(imagepath) {
 			return getDesaturedImageData(imagepath)
 			.then(featureAnalyzer.getFeatureVectors)
@@ -20,20 +22,25 @@ module.exports = function() {
 			})
 
 		},
-
+		// Attempts to predict a FEN position out of image
 		resolvePosition: function(imagepath) {
-			getDesaturedImageData(imagepath)
+			return getDesaturedImageData(imagepath)
 			.then(featureAnalyzer.getFeatureVectors)
 			.then(function(featureVectors) {
 				console.log("Feature vectors below");
 				console.log(featureVectors);
-				return positionConcluder.getPosition(featureVectors, learnedPieceExemplars);
+				return positionConcluder.getPosition(
+					featureVectors, // Feature vectors of the image
+					learnedPieceExemplars, // Weight vectors to compare against
+					intensityThreshold // Defines how similar color intensities are grouped together
+				);
 			});
 		}
 
 	};
 };
 
+// Helper functions
 
 function getDesaturedImageData(imagepath) {
 	return new Promise(function(resolve, reject) {
@@ -58,89 +65,89 @@ function turnToPieceExemplars(featureVectors) {
 
 	return {
 
-		wsq: {
-				wk: featureVectors['d3']
+		
+				wwk: featureVectors['d3']
 
 				,
-				wq: featureVectors['d1']
+				wwq: featureVectors['d1']
 
 				,
-				wr: featureVectors['h1']
+				wwr: featureVectors['h1']
 
 				,
-				wb: featureVectors['f1']
+				wwb: featureVectors['f1']
 
 				,
-				wn: featureVectors['b1']
+				wwn: featureVectors['b1']
 
 				,
-				wp: featureVectors['a2']
+				wwp: featureVectors['a2']
 
 				,
-				bk: featureVectors['e8']
+				wbk: featureVectors['e8']
 
 				,
-				bq: featureVectors['e6']
+				wbq: featureVectors['e6']
 
 				,
-				br: featureVectors['a8']
+				wbr: featureVectors['a8']
 
 				,
-				bb: featureVectors['c8']
+				wbb: featureVectors['c8']
 
 				,
-				bn: featureVectors['g8']
+				wbn: featureVectors['g8']
 
 				,
-				bp: featureVectors['h7']
+				wbp: featureVectors['h7']
 
 				, 
-				e:	featureVectors['a4']
-			
+				we:	featureVectors['a4']
+				,
 
-		},
+		
 
-		bsq: {
-				wk: featureVectors['e1']
+		
+				bwk: featureVectors['e1']
 
 				,
-				wq: featureVectors['e3']
+				bwq: featureVectors['e3']
 
 				,
-				wr: featureVectors['a1']
+				bwr: featureVectors['a1']
 
 				,
-				wb: featureVectors['c1']
+				bwb: featureVectors['c1']
 
 				,
-				wn: featureVectors['g1']
+				bwn: featureVectors['g1']
 
 				,
-				wp: featureVectors['b2']
+				bwp: featureVectors['b2']
 
 				,
-				bk: featureVectors['d6']
+				bbk: featureVectors['d6']
 
 				,
-				bq: featureVectors['d8']
+				bbq: featureVectors['d8']
 
 				,
-				br: featureVectors['h8']
+				bbr: featureVectors['h8']
 
 				,
-				bb: featureVectors['f8']
+				bbb: featureVectors['f8']
 
 				,
-				bn: featureVectors['b8']
+				bbn: featureVectors['b8']
 
 				,
-				bp: featureVectors['a7']
+				bbp: featureVectors['a7']
 
 				, 
-				e:	featureVectors['a5']
+				be:	featureVectors['a5']
 			
 
-		}
+		
 	}
 
 }

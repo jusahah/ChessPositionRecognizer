@@ -57,7 +57,6 @@ function startUp() {
 }
 
 function runTests() {
-	return;
 
 	Promise.resolve(imagesToFens)
 	.each(testImageToFenConversion)
