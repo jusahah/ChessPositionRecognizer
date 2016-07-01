@@ -113,7 +113,7 @@ function getFeatureVectorForSquare(square, image) {
 
 		var pixel = image.getPixel(x, y);
 
-		console.log("Pixel grey-intensity: " + pixel.r);
+		//console.log("Pixel grey-intensity: " + pixel.r);
 
 		return pixel.r; // Pixel is gray-scale so we only need red-value of the RGB.
 

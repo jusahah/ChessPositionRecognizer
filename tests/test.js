@@ -6,7 +6,7 @@ var positionAI = require('../positionAI/entry')();
 // Chessbase images have 20 px margin on all sides.
 
 var initialPosition = {
-	path: __dirname + '/testpositions/initial.jpg', 
+	path: __dirname + '/testpositions/initial_extra_kings_queens.jpg', 
 	fen : 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR'
 };
 
@@ -57,6 +57,7 @@ function startUp() {
 }
 
 function runTests() {
+	return;
 
 	Promise.resolve(imagesToFens)
 	.each(testImageToFenConversion)
