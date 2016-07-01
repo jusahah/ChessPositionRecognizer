@@ -3,11 +3,12 @@ var _ = require('lodash');
 var Promise = require('bluebird');
 var positionAI = require('../positionAI/entry')();
 
+// Chessbase images have 20 px margin on all sides.
 var imagesToFens = [
-	{path: 'testpositions/test1.jpg', fen : 'fen1'},
-	{path: 'testpositions/test2.jpg', fen : 'fen1'},
-	{path: 'testpositions/test3.jpg', fen : 'fen1'},
-	{path: 'testpositions/test4.jpg', fen : 'fen1'}
+	{path: __dirname + '/testpositions/test1.jpg', fen : 'fen1'},
+	{path: __dirname + '/testpositions/test1.jpg', fen : 'fen1'},
+	{path: __dirname + '/testpositions/test3.jpg', fen : 'fen2'},
+	{path: __dirname + '/testpositions/test4.jpg', fen : 'fen1'}
 ];
 
 function testImageToFenConversion(obj) {

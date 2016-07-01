@@ -1,6 +1,8 @@
 var Promise = require('bluebird');
+var lwip = require('lwip');
 
 var positionConcluder = require('./positionConcluder');
+var featureAnalyzer   = require('./featureAnalyzer');
 
 module.exports = function() {
 
@@ -8,9 +10,14 @@ module.exports = function() {
 
 		resolvePosition: function(imagepath) {
 			return new Promise(function(resolve, reject) {
-				setTimeout(function() {
-					resolve('fen1');
-				}, 750);
+				lwip.open(imagepath, function(err, image) {
+					if (err) return reject(err);
+					resolve(image);
+				});
+			}).then(function(image) {
+				return featureAnalyzer.getFeatureVectors(image);
+			}).then(function(featureVectors) {
+				return positionConcluder.getPosition(featureVectors);
 			});
 		}
 
