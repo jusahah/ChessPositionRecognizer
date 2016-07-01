@@ -1,10 +1,11 @@
 var Promise = require('bluebird');
 var lwip = require('lwip');
+var _ = require('lodash');
 
 var positionConcluder = require('./positionConcluder');
 var featureAnalyzer   = require('./featureAnalyzer');
 
-var intensityThreshold = 15;
+var intensityThreshold = 3;
 
 module.exports = function() {
 
@@ -17,7 +18,24 @@ module.exports = function() {
 			.then(featureAnalyzer.getFeatureVectors)
 			.then(turnToPieceExemplars)
 			.then(function(pieceExemplars) {
-				console.log(pieceExemplars)
+				console.log("Piece exemplars");
+				console.log(pieceExemplars);
+				console.log("__________")
+				var grades = [];
+				_.forOwn(pieceExemplars, function(value, exemplarName) {
+					grades.push({name: exemplarName, wToB: value.wToB, bgToPiece: value.bgToPiece});
+				});
+
+				grades = _.sortBy(grades, function(o) { return o.wToB});
+				console.log(grades);
+
+				/*
+				_.forOwn(pieceExemplars, function(value, key) {
+					console.log(key);
+					console.log(value.randompoints);
+					console.log("---------")
+				});
+				*/
 				learnedPieceExemplars = pieceExemplars;
 			})
 
@@ -29,6 +47,7 @@ module.exports = function() {
 			.then(function(featureVectors) {
 				console.log("Feature vectors below");
 				console.log(featureVectors);
+
 				return positionConcluder.getPosition(
 					featureVectors, // Feature vectors of the image
 					learnedPieceExemplars, // Weight vectors to compare against
@@ -107,7 +126,7 @@ function turnToPieceExemplars(featureVectors) {
 
 		
 
-		
+			/*
 				bwk: featureVectors['e1']
 
 				,
@@ -145,6 +164,7 @@ function turnToPieceExemplars(featureVectors) {
 
 				, 
 				be:	featureVectors['a5']
+			*/	
 			
 
 		

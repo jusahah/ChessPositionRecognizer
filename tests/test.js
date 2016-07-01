@@ -11,10 +11,11 @@ var initialPosition = {
 };
 
 var imagesToFens = [
+	{path: __dirname + '/testpositions/initial.jpg', fen : 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR'},
 	{path: __dirname + '/testpositions/test3.jpg', fen : 'rnbqkbnr/ppppp1pp/8/5p2/3P1B2/8/PPP1PPPP/RN1QKBNR'},
-	//{path: __dirname + '/testpositions/test1.jpg', fen : 'fen1'},
-	//{path: __dirname + '/testpositions/test3.jpg', fen : 'fen2'},
-	//{path: __dirname + '/testpositions/test4.jpg', fen : 'fen1'}
+	{path: __dirname + '/testpositions/test5.jpg', fen : 'r1bqk2r/pp1p1ppp/n1pP1n2/8/2PP4/2N5/PP2P1PP/R1BQKBNR'},
+	{path: __dirname + '/testpositions/test6.jpg', fen : '8/8/5r2/3P2k1/3R4/3K1p2/6p1/6N1'},
+	{path: __dirname + '/testpositions/test7.jpg', fen : '1rbq1rk1/ppp1b1pp/2np1n2/4Pp2/2PP4/5NPB/PPQ1P2P/RNB2RK1'}
 ];
 
 function testImageToFenConversion(obj) {
@@ -30,6 +31,7 @@ function testImageToFenConversion(obj) {
 
 		var resultPromise = positionAI.resolvePosition(imagepath);
 		resultPromise.then(function(resultFen) {
+			console.log("ONE RESOLVED");
 			if (fen !== resultFen) {
 				reject("Fen failed for image: " + imagepath + ", resultFen: " + resultFen);
 			} else {
