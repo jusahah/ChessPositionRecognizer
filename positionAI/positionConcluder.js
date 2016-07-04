@@ -158,6 +158,99 @@ module.exports = {
 }
 function resolveBestMatch(featuresObj, pieceExemplars, intensityThreshold) {
 
+	var isRook = function(updowns, paddings, minusOneCount, plusOneCount, bgToPiece) {
+		return updowns[0] > 0.5 && paddings > 4.5;
+	}
+
+	var isKnight = function(updowns, paddings, minusOneCount, plusOneCount, bgToPiece) {
+		return paddings < 8.5 && updowns.length < 3.5;
+	}
+
+	var isBishop = function(updowns, paddings, minusOneCount, plusOneCount, bgToPiece) {
+		return updowns.length < 4.5 && paddings > 8.5;
+	}
+
+	var isKing = function(updowns, paddings, minusOneCount, plusOneCount, bgToPiece) {
+		return paddings < 2.5 && updowns;
+	}
+
+	var isQueen = function(updowns, paddings, minusOneCount, plusOneCount, bgToPiece) {
+		return paddings < 3.5 && minusOneCount > 3;
+	}
+
+	var isPawn = function(updowns, paddings, minusOneCount, plusOneCount, bgToPiece) {
+		return paddings > 8.5 && updowns.length < 3.5;
+	}
+
+	// First we check if the square is empty, if it is there is no need to do more detailed matching
+	if (isEmpty(featuresObj.rays)) {
+		return {matches: featuresObj.rays.length, exemplar: 'e', chosen: 'e', matchPerc: 1, isEmpty: true};
+	}
+
+	var updownseqObj = featuresObj.updownseq;
+	var updowns = updownseqObj.updowns;
+	var paddings = updownseqObj.paddings;
+
+	var minusOneCount = _.reduce(updowns, function(c, v) {return v < -0.5 ? c+1 : c;}, 0)
+	var plusOneCount  = _.reduce(updowns, function(c, v) {return v >  0.5 ? c+1 : c;}, 0)
+
+	var instanceWhitesToBlacks = featuresObj.wToB;
+
+	var pieceColor = instanceWhitesToBlacks > 1.20 ? 'w' : 'b';
+	/*
+	console.log("First here");
+	console.log(updowns);
+	console.log(paddings);
+	console.log(minusOneCount);
+	console.log(plusOneCount);
+	*/
+
+	// Later abstract these into data-driven solution (map with function -> piece name)
+	if (isPawn(updowns, paddings, minusOneCount, plusOneCount)) {
+		// Its a rook
+		chosen = 'p';
+
+	} else if (isRook(updowns, paddings, minusOneCount, plusOneCount)) {
+		chosen = 'r';
+	} else if (isKnight(updowns, paddings, minusOneCount, plusOneCount)) {
+		chosen = 'n';
+
+	} else if (isBishop(updowns, paddings, minusOneCount, plusOneCount)) {
+		chosen = 'b';
+
+	} else if (isKing(updowns, paddings, minusOneCount, plusOneCount)) {
+		chosen = 'k';
+
+	} else if (isQueen(updowns, paddings, minusOneCount, plusOneCount)) {
+		chosen = 'q';
+
+	} else {
+		//chosen = 'p';
+		return resolveBestMatchBackup(featuresObj, pieceExemplars, intensityThreshold);
+	}
+
+
+
+	
+	//console.log(exemplarGrades);
+	
+
+	return {
+		chosen: pieceColor  + chosen, 
+		backup: false, 
+		minusOneCount: minusOneCount, 
+		plusOneCount: plusOneCount, 
+		paddings: paddings,
+		updowns: JSON.stringify(updowns)
+	}
+
+
+
+
+}
+
+function resolveBestMatchBackup(featuresObj, pieceExemplars, intensityThreshold) {
+
 	// First we check if the square is empty, if it is there is no need to do more detailed matching
 	if (isEmpty(featuresObj.rays)) {
 		return {matches: featuresObj.rays.length, exemplar: 'e', chosen: 'e', matchPerc: 1, isEmpty: true};
@@ -192,6 +285,8 @@ function resolveBestMatch(featuresObj, pieceExemplars, intensityThreshold) {
 
 	
 	//console.log(exemplarGrades);
+
+	return {chosen: chosen, backup: true}
 	
 
 	return {
@@ -208,6 +303,7 @@ function resolveBestMatch(featuresObj, pieceExemplars, intensityThreshold) {
 
 
 }
+
 // OLD WHICH USES RAYS TO GET THE PIECE OUTER FORM
 /*
 // Find the best match for given feature vector

@@ -1,7 +1,7 @@
 var lwip = require('lwip');
 var _ = require('lodash');
 
-var intensityThreshold = 15;
+var intensityThreshold = 25;
 
 module.exports = {
 
@@ -149,24 +149,34 @@ function getFeatureVectorForSquare(square, image) {
 function getFeatureVectorForSquareUsingRayCasting(square, image) {
 	// Y-coordinates for horizontal ray shooting
 	var shootingLevels = [
-
 		0.10, 
-		0.15, 
-		0.20, 
+		0.13,
+		0.16, 
+		0.19, 
+		0.22,
 		0.25,
-		0.30,
-		0.35,
+		0.28,
+		0.31,
+		0.34,
+		0.37,
 		0.40,
-		0.45,
-		0.50,
+		0.43,
+		0.46,
+		0.49,
+		0.52,
 		0.55,
-		0.60,
-		0.65,
+		0.58,
+		0.61,
+		0.64,
+		0.67,
 		0.70,
-		0.75,
-		0.80,
+		0.73,
+		0.76,
+		0.79,
+		0.82,
 		0.85,
-		0.90,
+		0.88,
+		0.91
 	];
 	// Random points around center
 	var randomPoints = [
@@ -191,7 +201,15 @@ function getFeatureVectorForSquareUsingRayCasting(square, image) {
 
 	var sqWidth = square.bottomright[0] - square.topleft[0];
 
-	var bgIntensity = image.getPixel(square.topleft[0] + 2, square.topleft[1] + 2).r;
+	var p1 = image.getPixel(square.topleft[0] + 2, square.topleft[1] + 2).r;
+	var p2 = image.getPixel(square.topleft[0] + 2, square.topleft[1] + 4).r;
+	var p3 = image.getPixel(square.topleft[0] + 2, square.topleft[1] + 6).r;
+	var p4 = image.getPixel(square.topleft[0] + 2, square.topleft[1] + 7).r;
+
+	var bgIntensity = (p1 + p2 + p3 + p4) / 4;
+
+	//var bgIntensity = image.getPixel(square.topleft[0] + 2, square.topleft[1] + 2).r;
+
 
 	var shootingLevels = _.map(shootingLevels, function(relativeLevel) {
 		return Math.round(sqWidth * relativeLevel);
@@ -243,7 +261,8 @@ function getFeatureVectorForSquareUsingRayCasting(square, image) {
 	});
 	*/
 	return {
-		rays: rayLenghts, 
+		//rays: rayLenghts, 
+		updownseq: getUpDownSequence(rayLenghts),
 		randompoints: randomPointsArr, 
 		wToB: whites / blacks, 
 		bgToPiece: bgs / (whites + blacks)
@@ -267,7 +286,7 @@ function shootRay(topLeftX, topLeftY, shootingY, bgIntensity, iterations, image)
 function shootRaysFromTop(topLeftX, topLeftY, shootingOffset, bgIntensity, iterations, image) {
 	var xOffset = topLeftX + shootingOffset;
 	for (var i = 0; i < iterations; i++) {
-		console.log(xOffset + ", " + topLeftY + i)
+		//console.log(xOffset + ", " + topLeftY + i)
 		var pixelIntensity = image.getPixel(xOffset, topLeftY + i).r;
 
 		if (Math.abs(pixelIntensity - bgIntensity) > intensityThreshold) {
@@ -277,4 +296,50 @@ function shootRaysFromTop(topLeftX, topLeftY, shootingOffset, bgIntensity, itera
 	};
 
 	return i;	
+}
+
+function getUpDownSequence(rayLenghts) {
+	var origLen = rayLenghts.length;
+	rayLenghts = _.filter(rayLenghts, function(l) {
+		return l < 0.485;
+	});
+
+	var paddings = origLen - rayLenghts.length;
+
+	var lastVal = rayLenghts.shift();
+	var valueChangeThreshold = 0.015;
+	var lastDirection = 0;
+
+	// Up is -1, down is 1
+	var updowns = [];
+
+	for (var i = 0, j = rayLenghts.length; i < j; i++) {
+		var rayL = rayLenghts[i];
+
+		if (Math.abs(rayL-lastVal) > valueChangeThreshold) {
+			// If we go downwards (current val larger than previous one)
+			if (rayL > lastVal) {
+				// We are going down!
+				if (lastDirection < 0.01) {
+					lastDirection = 1;
+					updowns.push(1);					
+				} 
+
+			}
+			else {
+				// We are going up!
+				if (lastDirection > -0.01) {
+					lastDirection = -1;
+					updowns.push(-1);					
+				} 
+			} 
+		}
+
+		lastVal = rayL;
+		
+	};
+	//return updowns;
+	return {updowns: JSON.stringify(updowns), paddings: paddings};
+
+	
 }

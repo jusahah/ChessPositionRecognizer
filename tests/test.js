@@ -21,6 +21,7 @@ var imagesToFens = [
 	{path: __dirname + '/testpositions/test7.jpg', fen : '1rbq1rk1/ppp1b1pp/2np1n2/4Pp2/2PP4/5NPB/PPQ1P2P/RNB2RK1'},
 	{path: __dirname + '/testpositions/test9.jpg', fen : '2r2b2/kq1npp2/1ppp1n1p/p6p/P1QPP2P/2P3PN/1P1N1P2/R3KB2'},
 	{path: __dirname + '/testpositions/test10.jpg', fen : '8/8/5Ppp/6p1/6P1/5k1K/8/8'},
+	
 
 ];
 
