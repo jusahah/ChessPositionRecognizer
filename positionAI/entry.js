@@ -54,6 +54,12 @@ module.exports = function() {
 					intensityThreshold // Defines how similar color intensities are grouped together
 				);
 			});
+		},
+
+		getFeatureVectors: function(imagepath) {
+			return getDesaturedImageData(imagepath)
+			.then(featureAnalyzer.getFeatureVectors)
+
 		}
 
 	};

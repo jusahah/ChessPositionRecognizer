@@ -149,41 +149,24 @@ function getFeatureVectorForSquare(square, image) {
 function getFeatureVectorForSquareUsingRayCasting(square, image) {
 	// Y-coordinates for horizontal ray shooting
 	var shootingLevels = [
-		0.07,
+
 		0.10, 
-		0.12,
 		0.15, 
-		0.17,
 		0.20, 
-		0.23,
 		0.25,
-		0.27, 
 		0.30,
-		0.32, 
 		0.35,
-		0.38, 
 		0.40,
-		0.43, 
 		0.45,
-		0.47,
 		0.50,
-		0.53,
 		0.55,
-		0.57,
 		0.60,
-		0.62,
 		0.65,
-		0.68,
 		0.70,
-		0.72,
 		0.75,
-		0.77,
 		0.80,
-		0.82,
 		0.85,
-		0.88,
 		0.90,
-		0.93
 	];
 	// Random points around center
 	var randomPoints = [
@@ -210,7 +193,7 @@ function getFeatureVectorForSquareUsingRayCasting(square, image) {
 
 	var bgIntensity = image.getPixel(square.topleft[0] + 2, square.topleft[1] + 2).r;
 
-	var shootingLevelsInY = _.map(shootingLevels, function(relativeLevel) {
+	var shootingLevels = _.map(shootingLevels, function(relativeLevel) {
 		return Math.round(sqWidth * relativeLevel);
 	});
 
@@ -218,10 +201,11 @@ function getFeatureVectorForSquareUsingRayCasting(square, image) {
 	var y = square.topleft[1];
 
 	// Shoots rays one by one on each vertical level and tracks when it hits piece
-	var rayLenghts = _.map(shootingLevelsInY, function(shootingY) {
-		var xDist = shootRay(x+2, y, shootingY, bgIntensity, Math.round(sqWidth/2), image);
+	var rayLenghts = _.map(shootingLevels, function(shootingOffset) {
+		//var xDist = shootRay(x+2, y, shootingY, bgIntensity, Math.round(sqWidth/2), image);
+		var yDist = shootRaysFromTop(x, y+2, shootingOffset, bgIntensity, Math.round(sqWidth/2), image);
 		// We need to normalize the width so different sized boards are handled uniformly
-		return parseFloat((xDist / sqWidth).toFixed(2));
+		return parseFloat((yDist / sqWidth).toFixed(2));
 	});
 
 	// Get white vs. black pixel densities
@@ -229,8 +213,8 @@ function getFeatureVectorForSquareUsingRayCasting(square, image) {
 	var blacks = 1;
 	var bgs = 0;
 
-	for (var i = x+1; i < x + sqWidth-3; ++i) {
-		for (var j = y+1; j < y + sqWidth-3; ++j) {
+	for (var i = x+1; i < x + sqWidth-2; i += 1) {
+		for (var j = y+1; j < y + sqWidth-2; j += 1) {
 			var r = image.getPixel(i, j).r;
 			//console.log(r);
 			if (r < 15) ++blacks;
@@ -278,4 +262,19 @@ function shootRay(topLeftX, topLeftY, shootingY, bgIntensity, iterations, image)
 	};
 
 	return i;
+}
+
+function shootRaysFromTop(topLeftX, topLeftY, shootingOffset, bgIntensity, iterations, image) {
+	var xOffset = topLeftX + shootingOffset;
+	for (var i = 0; i < iterations; i++) {
+		console.log(xOffset + ", " + topLeftY + i)
+		var pixelIntensity = image.getPixel(xOffset, topLeftY + i).r;
+
+		if (Math.abs(pixelIntensity - bgIntensity) > intensityThreshold) {
+			// We are not above background any more
+			return i;
+		}
+	};
+
+	return i;	
 }
