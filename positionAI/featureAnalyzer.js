@@ -1,7 +1,7 @@
 var lwip = require('lwip');
 var _ = require('lodash');
 
-var intensityThreshold = 25;
+var intensityThreshold = 45;
 
 module.exports = {
 
@@ -150,33 +150,15 @@ function getFeatureVectorForSquareUsingRayCasting(square, image) {
 	// Y-coordinates for horizontal ray shooting
 	var shootingLevels = [
 		0.10, 
-		0.13,
-		0.16, 
-		0.19, 
-		0.22,
-		0.25,
-		0.28,
-		0.31,
-		0.34,
-		0.37,
-		0.40,
-		0.43,
-		0.46,
-		0.49,
-		0.52,
-		0.55,
-		0.58,
-		0.61,
-		0.64,
-		0.67,
-		0.70,
-		0.73,
-		0.76,
-		0.79,
-		0.82,
-		0.85,
-		0.88,
-		0.91
+		0.20, 
+		0.30, 
+		0.40, 
+		0.50, 
+		0.60, 
+		0.70, 
+		0.80,
+		0.90 
+
 	];
 	// Random points around center
 	var randomPoints = [
@@ -218,12 +200,21 @@ function getFeatureVectorForSquareUsingRayCasting(square, image) {
 	var x = square.topleft[0];
 	var y = square.topleft[1];
 
+	var middleRayLen = shootRaysFromTop(x, y+2, Math.round(sqWidth * 0.50), bgIntensity, Math.round(sqWidth/2), image);
+
 	// Shoots rays one by one on each vertical level and tracks when it hits piece
 	var rayLenghts = _.map(shootingLevels, function(shootingOffset) {
 		//var xDist = shootRay(x+2, y, shootingY, bgIntensity, Math.round(sqWidth/2), image);
 		var yDist = shootRaysFromTop(x, y+2, shootingOffset, bgIntensity, Math.round(sqWidth/2), image);
 		// We need to normalize the width so different sized boards are handled uniformly
 		return parseFloat((yDist / sqWidth).toFixed(2));
+	});
+
+	var rayLenghtsHoriz = _.map(shootingLevels, function(shootingOffset) {
+		var xDist = shootRay(x+2, y, shootingOffset, bgIntensity, Math.round(sqWidth/2), image);
+		//var yDist = shootRaysFromTop(x, y+2, shootingOffset, bgIntensity, Math.round(sqWidth/2), image);
+		// We need to normalize the width so different sized boards are handled uniformly
+		return parseFloat((xDist / sqWidth).toFixed(2));
 	});
 
 	// Get white vs. black pixel densities
@@ -235,9 +226,13 @@ function getFeatureVectorForSquareUsingRayCasting(square, image) {
 		for (var j = y+1; j < y + sqWidth-2; j += 1) {
 			var r = image.getPixel(i, j).r;
 			//console.log(r);
+			if (Math.abs(bgIntensity - r) < 15) {
+				++bgs;
+				continue;
+			}
 			if (r < 15) ++blacks;
 			else if (r > 240) ++whites;
-			else ++bgs;	
+			
 		};	
 	};
 
@@ -261,11 +256,14 @@ function getFeatureVectorForSquareUsingRayCasting(square, image) {
 	});
 	*/
 	return {
-		//rays: rayLenghts, 
+		rays: rayLenghts, 
+		horizRays: rayLenghtsHoriz,
+		updownseqHoriz: getUpDownSequence(rayLenghtsHoriz),
 		updownseq: getUpDownSequence(rayLenghts),
 		randompoints: randomPointsArr, 
 		wToB: whites / blacks, 
-		bgToPiece: bgs / (whites + blacks)
+		bgToPiece: bgs / (whites + blacks),
+		middleRayLen: middleRayLen
 	};
 }
 
@@ -289,6 +287,8 @@ function shootRaysFromTop(topLeftX, topLeftY, shootingOffset, bgIntensity, itera
 		//console.log(xOffset + ", " + topLeftY + i)
 		var pixelIntensity = image.getPixel(xOffset, topLeftY + i).r;
 
+		if (pixelIntensity < 65) return i;
+
 		if (Math.abs(pixelIntensity - bgIntensity) > intensityThreshold) {
 			// We are not above background any more
 			return i;
@@ -298,7 +298,54 @@ function shootRaysFromTop(topLeftX, topLeftY, shootingOffset, bgIntensity, itera
 	return i;	
 }
 
+
 function getUpDownSequence(rayLenghts) {
+	var origLen = rayLenghts.length;
+	rayLenghts = _.filter(rayLenghts, function(l) {
+		return l < 0.485;
+	});
+
+	var paddings = origLen - rayLenghts.length;
+
+	var lastVal = rayLenghts.shift();
+	var valueChangeThreshold = 0.035;
+	var lastDirection = 0;
+
+	// Up is -1, down is 1
+	var updowns = [];
+
+	for (var i = 0, j = rayLenghts.length; i < j; i++) {
+		var rayL = rayLenghts[i];
+
+		if (Math.abs(rayL-lastVal) > valueChangeThreshold) {
+			// If we go downwards (current val larger than previous one)
+			if (rayL > lastVal) {
+				// We are going down!
+				if (lastDirection < 0.01) {
+					lastDirection = 1;
+					updowns.push(1);					
+				} 
+
+			}
+			else {
+				// We are going up!
+				if (lastDirection > -0.01) {
+					lastDirection = -1;
+					updowns.push(-1);					
+				} 
+			} 
+		}
+
+		lastVal = rayL;
+		
+	};
+	//return updowns;
+	return {updowns: updowns, paddings: paddings};
+
+	
+}
+/*
+function getUpDownSequenceHoriz(rayLenghts) {
 	var origLen = rayLenghts.length;
 	rayLenghts = _.filter(rayLenghts, function(l) {
 		return l < 0.485;
@@ -339,7 +386,8 @@ function getUpDownSequence(rayLenghts) {
 		
 	};
 	//return updowns;
-	return {updowns: JSON.stringify(updowns), paddings: paddings};
+	return {updowns: updowns, paddings: paddings};
 
 	
 }
+*/

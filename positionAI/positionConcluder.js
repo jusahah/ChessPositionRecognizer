@@ -133,7 +133,27 @@ var pieceFeatureProbabilities = {
 		}
 	}
 }
+/*
+var rook = {
+	h: {
+		[0, '>', 5],
+		[0, '<', 'last']	
+	},
+	v: {
+		[]
+	}
+}
 
+var bishop = {
+	h: {
+		[1, '<', 5],
+		[5, '>', 7]	
+	},
+	v: {
+		[2, '>', 0.7] // Goes well over the half
+	}
+}
+*/
 module.exports = {
 
 	getPosition: function(featureVectors, pieceExemplars, intensityThreshold) {
@@ -158,29 +178,37 @@ module.exports = {
 }
 function resolveBestMatch(featuresObj, pieceExemplars, intensityThreshold) {
 
-	var isRook = function(updowns, paddings, minusOneCount, plusOneCount, bgToPiece) {
-		return updowns[0] > 0.5 && paddings > 4.5;
+	var isRook = function(updowns, updownsHoriz, paddings, minusOneCount, plusOneCount, bgToPiece) {
+		return updowns[0] > 0.5 && updownsHoriz[0] > 0.5 && middleRayLen < 7.5;
 	}
 
-	var isKnight = function(updowns, paddings, minusOneCount, plusOneCount, bgToPiece) {
-		return paddings < 8.5 && updowns.length < 3.5;
+	var isPawn = function(updowns, updownsHoriz, paddings, minusOneCount, plusOneCount, bgToPiece) {
+		return updowns.length < 3.5 && updownsHoriz.length > 4.5 && bgToPiece > 2.65;
 	}
 
-	var isBishop = function(updowns, paddings, minusOneCount, plusOneCount, bgToPiece) {
-		return updowns.length < 4.5 && paddings > 8.5;
+	var isQueen = function(updowns, updownsHoriz, paddings, minusOneCount, plusOneCount, bgToPiece, middleRayLen) {
+		return middleRayLen > 10.5 && paddings < 3.5;
 	}
 
-	var isKing = function(updowns, paddings, minusOneCount, plusOneCount, bgToPiece) {
-		return paddings < 2.5 && updowns;
+	var isKing = function(updowns, updownsHoriz, paddings, minusOneCount, plusOneCount, bgToPiece, middleRayLen) {
+		return updownsHoriz.length === 2 && middleRayLen < 6.5;
 	}
 
-	var isQueen = function(updowns, paddings, minusOneCount, plusOneCount, bgToPiece) {
-		return paddings < 3.5 && minusOneCount > 3;
+	var isBishop = function(updowns, updownsHoriz, paddings, minusOneCount, plusOneCount, bgToPiece) {
+		return updowns.length < 6.5 && updownsHoriz.length < 6.5 && paddings > 7.5;
+	}	
+
+	var isKnight = function(updowns, updownsHoriz, paddings, minusOneCount, plusOneCount, bgToPiece) {
+		return paddings < 7.5; 
 	}
 
-	var isPawn = function(updowns, paddings, minusOneCount, plusOneCount, bgToPiece) {
-		return paddings > 8.5 && updowns.length < 3.5;
-	}
+
+
+
+
+
+
+
 
 	// First we check if the square is empty, if it is there is no need to do more detailed matching
 	if (isEmpty(featuresObj.rays)) {
@@ -188,6 +216,9 @@ function resolveBestMatch(featuresObj, pieceExemplars, intensityThreshold) {
 	}
 
 	var updownseqObj = featuresObj.updownseq;
+	var updownsHorizObj = featuresObj.updownseqHoriz;
+
+	var updownsHoriz = updownsHorizObj.updowns;
 	var updowns = updownseqObj.updowns;
 	var paddings = updownseqObj.paddings;
 
@@ -195,38 +226,41 @@ function resolveBestMatch(featuresObj, pieceExemplars, intensityThreshold) {
 	var plusOneCount  = _.reduce(updowns, function(c, v) {return v >  0.5 ? c+1 : c;}, 0)
 
 	var instanceWhitesToBlacks = featuresObj.wToB;
+	var bgToPiece = featuresObj.bgToPiece;
+	var middleRayLen = featuresObj.middleRayLen;
+
 
 	var pieceColor = instanceWhitesToBlacks > 1.20 ? 'w' : 'b';
-	/*
+	
 	console.log("First here");
 	console.log(updowns);
 	console.log(paddings);
-	console.log(minusOneCount);
-	console.log(plusOneCount);
-	*/
+	console.log(bgToPiece);
+	console.log(middleRayLen);
+	
 
 	// Later abstract these into data-driven solution (map with function -> piece name)
-	if (isPawn(updowns, paddings, minusOneCount, plusOneCount)) {
+	if (isPawn(updowns, updownsHoriz, paddings, minusOneCount, plusOneCount, bgToPiece)) {
 		// Its a rook
 		chosen = 'p';
 
-	} else if (isRook(updowns, paddings, minusOneCount, plusOneCount)) {
+	}  else if (isRook(updowns, updownsHoriz, paddings, minusOneCount, plusOneCount, bgToPiece)) {
 		chosen = 'r';
-	} else if (isKnight(updowns, paddings, minusOneCount, plusOneCount)) {
-		chosen = 'n';
-
-	} else if (isBishop(updowns, paddings, minusOneCount, plusOneCount)) {
-		chosen = 'b';
-
-	} else if (isKing(updowns, paddings, minusOneCount, plusOneCount)) {
+	} else if (isKing(updowns, updownsHoriz, paddings, minusOneCount, plusOneCount, bgToPiece, middleRayLen)) {
 		chosen = 'k';
 
-	} else if (isQueen(updowns, paddings, minusOneCount, plusOneCount)) {
+	} else if (isQueen(updowns, updownsHoriz, paddings, minusOneCount, plusOneCount, bgToPiece, middleRayLen)) {
 		chosen = 'q';
 
-	} else {
-		//chosen = 'p';
-		return resolveBestMatchBackup(featuresObj, pieceExemplars, intensityThreshold);
+	} else if (isBishop(updowns, updownsHoriz, paddings, minusOneCount, plusOneCount, bgToPiece)) {
+		chosen = 'b';
+
+	} else if (isKnight(updowns, updownsHoriz, paddings, minusOneCount, plusOneCount, bgToPiece)) {
+		chosen = 'n';
+
+	}  else {
+		chosen = '?';
+		//return resolveBestMatchBackup(featuresObj, pieceExemplars, intensityThreshold);
 	}
 
 
@@ -236,12 +270,16 @@ function resolveBestMatch(featuresObj, pieceExemplars, intensityThreshold) {
 	
 
 	return {
+		rays: JSON.stringify(featuresObj.rays),
 		chosen: pieceColor  + chosen, 
 		backup: false, 
 		minusOneCount: minusOneCount, 
 		plusOneCount: plusOneCount, 
 		paddings: paddings,
-		updowns: JSON.stringify(updowns)
+		updowns: JSON.stringify(updowns),
+		updownsHoriz: JSON.stringify(updownsHoriz),
+		bgToPiece: bgToPiece,
+		middleRayLen: middleRayLen
 	}
 
 
