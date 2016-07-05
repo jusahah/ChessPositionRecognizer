@@ -195,12 +195,12 @@ function resolveBestMatch(featuresObj, pieceExemplars, intensityThreshold) {
 
 		var sorted = rays.sort(sortNumber);
 		var highAvg = _.mean(_.slice(sorted, 0, 4));
-		return stats.pieceWidth > 0.895 && highAvg < 0.485; 
+		return stats.pieceWidth > 0.895 && highAvg < 0.505 && stats.deviation < 0.165; 
 	}
 
 	var isKing = function(rays,stats) {
 
-		return stats.deviation < 0.135 && stats.pieceWidth > 0.875 && stats.centerDeviation < 0.035;
+		return stats.deviation < 0.135 && stats.pieceWidth > 0.875 && stats.centerDeviation < 0.0215;
 	}
 
 	var isBishop = function(rays, stats) {

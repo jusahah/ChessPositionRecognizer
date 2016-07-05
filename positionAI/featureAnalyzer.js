@@ -419,6 +419,10 @@ function calcStatsForLens(lens, xI) {
 			avg28,avg38,avg48,avg58,avg68,avg78,
 		],
 		halfAvgs: JSON.stringify([halfAvg1, halfAvg2]),
+		jsonEightAvgs: JSON.stringify([
+			avg28,avg38,avg48,avg58,avg68,avg78,
+		]),
+		lens: JSON.stringify(lens.sort()),
 		totalAvg: _.mean(lens)
 
 	}
