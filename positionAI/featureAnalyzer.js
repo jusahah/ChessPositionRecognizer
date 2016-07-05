@@ -1,7 +1,7 @@
 var lwip = require('lwip');
 var _ = require('lodash');
 
-var intensityThreshold = 45;
+var intensityThreshold = 35;
 
 module.exports = {
 
@@ -36,8 +36,11 @@ function buildSquarePixelBounds(boardWidth) {
 		});
 	});
 
-	console.log(squares['a8']['topleft']);	
-	console.log(squares['a8']['bottomright']);	
+	//console.log(squares['a8']['topleft']);	
+	//console.log(squares['a8']['bottomright']);	
+
+	//console.log(JSON.stringify(squares));
+
 
 	return squares;
 }
@@ -150,14 +153,26 @@ function getFeatureVectorForSquareUsingRayCasting(square, image) {
 	// Y-coordinates for horizontal ray shooting
 	var shootingLevels = [
 		0.10, 
-		0.20, 
+		0.14,
+		0.18, 
+		0.22, 
+		0.26, 
 		0.30, 
-		0.40, 
+		0.34, 
+		0.38, 
+		0.42,
+		0.46,
 		0.50, 
-		0.60, 
+		0.54,
+		0.58, 
+		0.62, 
+		0.66, 
 		0.70, 
-		0.80,
-		0.90 
+		0.74, 
+		0.78, 
+		0.82,
+		0.86,
+		0.90		
 
 	];
 	// Random points around center
@@ -190,7 +205,7 @@ function getFeatureVectorForSquareUsingRayCasting(square, image) {
 
 	var bgIntensity = (p1 + p2 + p3 + p4) / 4;
 
-	//var bgIntensity = image.getPixel(square.topleft[0] + 2, square.topleft[1] + 2).r;
+	var bgIntensity = image.getPixel(square.topleft[0] + 3, square.topleft[1] + 3).r;
 
 
 	var shootingLevels = _.map(shootingLevels, function(relativeLevel) {
@@ -199,6 +214,7 @@ function getFeatureVectorForSquareUsingRayCasting(square, image) {
 
 	var x = square.topleft[0];
 	var y = square.topleft[1];
+	var bottomY = y + sqWidth - 3;
 
 	var middleRayLen = shootRaysFromTop(x, y+2, Math.round(sqWidth * 0.50), bgIntensity, Math.round(sqWidth/2), image);
 
@@ -217,9 +233,21 @@ function getFeatureVectorForSquareUsingRayCasting(square, image) {
 		return parseFloat((xDist / sqWidth).toFixed(2));
 	});
 
+	var rayLenghtsPerPixel = shootRaysFromTopPerPixel(x+2, y+3, bgIntensity, sqWidth - 4, sqWidth - 6, image);
+
+	var rayLenghtsBottom = _.map(shootingLevels, function(shootingOffset) {
+		//console.log("SHOOT OFFSET: " + shootingOffset);
+		//console.log("BOTTOM Y: " + bottomY);
+		var yDist = shootRayFromBottom(x+2, bottomY, shootingOffset, bgIntensity, Math.round(sqWidth/2), image);
+		//var yDist = shootRaysFromTop(x, y+2, shootingOffset, bgIntensity, Math.round(sqWidth/2), image);
+		// We need to normalize the width so different sized boards are handled uniformly
+		return parseFloat((yDist / sqWidth).toFixed(2));
+	});
+
 	// Get white vs. black pixel densities
 	var whites = 1;
 	var blacks = 1;
+	var noBlacks = 1;
 	var bgs = 0;
 
 	for (var i = x+1; i < x + sqWidth-2; i += 1) {
@@ -228,10 +256,14 @@ function getFeatureVectorForSquareUsingRayCasting(square, image) {
 			//console.log(r);
 			if (Math.abs(bgIntensity - r) < 15) {
 				++bgs;
-				continue;
+				
 			}
-			if (r < 15) ++blacks;
-			else if (r > 240) ++whites;
+			if (r < 25) {
+				++blacks;
+			} else  {
+				++noBlacks;
+				if (r > 235) ++whites;
+			}
 			
 		};	
 	};
@@ -255,15 +287,25 @@ function getFeatureVectorForSquareUsingRayCasting(square, image) {
 
 	});
 	*/
+
+	var bottomRays = _.filter(rayLenghtsBottom, function(rayL) {return rayL < 0.475});
+
+
 	return {
-		rays: rayLenghts, 
-		horizRays: rayLenghtsHoriz,
-		updownseqHoriz: getUpDownSequence(rayLenghtsHoriz),
-		updownseq: getUpDownSequence(rayLenghts),
-		randompoints: randomPointsArr, 
+		//rays: rayLenghts, 
+		raysPerPixel: rayLenghtsPerPixel,
+		stats: calcStatsForLens(rayLenghtsPerPixel, sqWidth - 4),
+		//horizRays: rayLenghtsHoriz,
+
+		//bottomRays: bottomRays,
+		//bottomDeviation: Math.sqrt(getVariance(bottomRays)),
+		//updownseqHoriz: getUpDownSequence(rayLenghtsHoriz),
+		//updownseq: getUpDownSequence(rayLenghts),
+		//randompoints: randomPointsArr, 
 		wToB: whites / blacks, 
+		bToNb: blacks / noBlacks,
 		bgToPiece: bgs / (whites + blacks),
-		middleRayLen: middleRayLen
+		//middleRayLen: middleRayLen
 	};
 }
 
@@ -296,6 +338,91 @@ function shootRaysFromTop(topLeftX, topLeftY, shootingOffset, bgIntensity, itera
 	};
 
 	return i;	
+}
+
+function shootRayFromBottom(x, y, shootingOffset, bgIntensity, iterations, image) {
+	var xOffset = x + shootingOffset;
+	var firstIntensity = image.getPixel(xOffset, y).r;
+	//console.log("X offset: " + xOffset + ", Y OFFSET: " + y + " | " + firstIntensity);
+	for (var i = 0; i < iterations; i++) {
+		var pixelIntensity = image.getPixel(xOffset, y - i).r;
+
+		if (Math.abs(pixelIntensity - bgIntensity) > intensityThreshold) {
+			// We are not above background any more
+			return i;
+		}
+	};
+
+	return i;	
+}
+
+function shootRaysFromTopPerPixel(x, y, bgIntensity, xIterations, maxYiterations, image) {
+
+	var lens = [];
+
+	for (var i = 0; i < xIterations; i++) {
+		var xOffset = x + i;
+		//var found = false;
+		for (var j = 0; j < maxYiterations; j++) {
+			//console.log(xOffset + ", " + topLeftY + i)
+			var pixelIntensity = image.getPixel(xOffset, y + j).r;
+			if (Math.abs(pixelIntensity - bgIntensity) > intensityThreshold) {
+				// We are not above background any more
+				lens.push(Math.round(j / maxYiterations * 100) / 100);
+				//found = true;
+				break;
+			}
+		};
+
+		//if (!found) lens.push(999);
+	}
+
+	//var stats = calcStatsForLens(lens, 72);
+
+	return lens;
+
+		
+
+}
+
+function calcStatsForLens(lens, xI) {
+	var pixelsCount = lens.length;
+
+	var chunkSize = Math.floor(lens.length / 8);
+	var halfSize  = Math.round(lens.length / 2);
+
+	var eights = _.chunk(lens, chunkSize);
+	var halfs  = _.chunk(lens, halfSize);
+	// Ditch first and last eights
+	var avg28 = _.mean(eights[1]);
+	var avg38 = _.mean(eights[2]);
+	var avg48 = _.mean(eights[3]);
+	var avg58 = _.mean(eights[4]);
+	var avg68 = _.mean(eights[5]);
+	var avg78 = _.mean(eights[6]);
+
+	var halfAvg1 = _.mean(halfs[0]);
+	var halfAvg2 = _.mean(halfs[1]);
+
+	var totalDeviation = Math.sqrt(getVariance(lens));
+	var startI = Math.floor(pixelsCount / 2) - 3;
+	var centerSeven = _.slice(lens, startI, startI + 7);
+	var deviationAroundCenter = Math.sqrt(getVariance(centerSeven));
+
+
+	return {
+		deviation: totalDeviation,
+		centerDeviation: deviationAroundCenter,
+		centerSeven: centerSeven,
+		pieceWidth: pixelsCount / xI,
+		eightAvgs: [
+			avg28,avg38,avg48,avg58,avg68,avg78,
+		],
+		halfAvgs: JSON.stringify([halfAvg1, halfAvg2]),
+		totalAvg: _.mean(lens)
+
+	}
+
 }
 
 
@@ -344,6 +471,34 @@ function getUpDownSequence(rayLenghts) {
 
 	
 }
+
+// From SO
+function getVariance( numArr, numOfDec ){
+	
+	var avg = getAverageFromNumArr( numArr, numOfDec ), 
+		i = numArr.length,
+		v = 0;
+ 
+	while( i-- ){
+		v += Math.pow( (numArr[ i ] - avg), 2 );
+	}
+	v /= numArr.length;
+	return getNumWithSetDec( v, numOfDec );
+}
+
+function getNumWithSetDec( num, numOfDec ){
+	var pow10s = Math.pow( 10, numOfDec || 0 );
+	return ( numOfDec ) ? Math.round( pow10s * num ) / pow10s : num;
+}
+function getAverageFromNumArr( numArr, numOfDec ){
+	var i = numArr.length, 
+		sum = 0;
+	while( i-- ){
+		sum += numArr[ i ];
+	}
+	return getNumWithSetDec( (sum / numArr.length ), numOfDec );
+}
+
 /*
 function getUpDownSequenceHoriz(rayLenghts) {
 	var origLen = rayLenghts.length;

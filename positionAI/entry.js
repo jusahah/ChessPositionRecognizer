@@ -19,7 +19,7 @@ module.exports = function() {
 			.then(turnToPieceExemplars)
 			.then(function(pieceExemplars) {
 				console.log("Piece exemplars");
-				console.log(pieceExemplars);
+				//console.log(pieceExemplars);
 				console.log("__________")
 				var grades = [];
 				_.forOwn(pieceExemplars, function(value, exemplarName) {
@@ -27,7 +27,7 @@ module.exports = function() {
 				});
 
 				grades = _.sortBy(grades, function(o) { return o.wToB});
-				console.log(grades);
+				//console.log(grades);
 
 				/*
 				_.forOwn(pieceExemplars, function(value, key) {

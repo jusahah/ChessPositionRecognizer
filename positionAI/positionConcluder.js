@@ -177,29 +177,38 @@ module.exports = {
 	}
 }
 function resolveBestMatch(featuresObj, pieceExemplars, intensityThreshold) {
+	console.log("FEAT");
+	console.log(featuresObj);
 
-	var isRook = function(updowns, updownsHoriz, paddings, minusOneCount, plusOneCount, bgToPiece) {
-		return updowns[0] > 0.5 && updownsHoriz[0] > 0.5 && middleRayLen < 7.5;
+	var isRook = function(rays, stats) {
+		return stats.pieceWidth < 0.775 && stats.totalAvg < 0.235;
 	}
 
-	var isPawn = function(updowns, updownsHoriz, paddings, minusOneCount, plusOneCount, bgToPiece) {
-		return updowns.length < 3.5 && updownsHoriz.length > 4.5 && bgToPiece > 2.65;
+	var isPawn = function(rays, stats) {
+		return stats.pieceWidth < 0.655;
 	}
 
-	var isQueen = function(updowns, updownsHoriz, paddings, minusOneCount, plusOneCount, bgToPiece, middleRayLen) {
-		return middleRayLen > 10.5 && paddings < 3.5;
+	var isQueen = function(rays, stats) {
+		function sortNumber(a,b) {
+		    return b - a;
+		}
+
+		var sorted = rays.sort(sortNumber);
+		var highAvg = _.mean(_.slice(sorted, 0, 4));
+		return stats.pieceWidth > 0.895 && highAvg < 0.485; 
 	}
 
-	var isKing = function(updowns, updownsHoriz, paddings, minusOneCount, plusOneCount, bgToPiece, middleRayLen) {
-		return updownsHoriz.length === 2 && middleRayLen < 6.5;
+	var isKing = function(rays,stats) {
+
+		return stats.deviation < 0.135 && stats.pieceWidth > 0.875 && stats.centerDeviation < 0.035;
 	}
 
-	var isBishop = function(updowns, updownsHoriz, paddings, minusOneCount, plusOneCount, bgToPiece) {
-		return updowns.length < 6.5 && updownsHoriz.length < 6.5 && paddings > 7.5;
+	var isBishop = function(rays, stats) {
+		return stats.totalAvg > 0.35 && stats.pieceWidth > 0.80;
 	}	
 
-	var isKnight = function(updowns, updownsHoriz, paddings, minusOneCount, plusOneCount, bgToPiece) {
-		return paddings < 7.5; 
+	var isKnight = function(rays, stats) {
+		return stats.deviation < 0.235 && stats.totalAvg < 0.365;
 	}
 
 
@@ -209,11 +218,12 @@ function resolveBestMatch(featuresObj, pieceExemplars, intensityThreshold) {
 
 
 
-
+	
 	// First we check if the square is empty, if it is there is no need to do more detailed matching
-	if (isEmpty(featuresObj.rays)) {
-		return {matches: featuresObj.rays.length, exemplar: 'e', chosen: 'e', matchPerc: 1, isEmpty: true};
+	if (isEmpty(featuresObj.raysPerPixel)) {
+		return {matches: 0, exemplar: 'e', chosen: 'e', matchPerc: 1, isEmpty: true};
 	}
+	/*
 
 	var updownseqObj = featuresObj.updownseq;
 	var updownsHorizObj = featuresObj.updownseqHoriz;
@@ -230,32 +240,35 @@ function resolveBestMatch(featuresObj, pieceExemplars, intensityThreshold) {
 	var middleRayLen = featuresObj.middleRayLen;
 
 
-	var pieceColor = instanceWhitesToBlacks > 1.20 ? 'w' : 'b';
+	
 	
 	console.log("First here");
 	console.log(updowns);
 	console.log(paddings);
 	console.log(bgToPiece);
 	console.log(middleRayLen);
-	
+	*/
+
+	var instanceWhitesToBlacks = featuresObj.wToB;
+	var pieceColor = featuresObj.bToNb > 0.155 ? 'b' : 'w';
 
 	// Later abstract these into data-driven solution (map with function -> piece name)
-	if (isPawn(updowns, updownsHoriz, paddings, minusOneCount, plusOneCount, bgToPiece)) {
+	if (isPawn(featuresObj.raysPerPixel, featuresObj.stats)) {
 		// Its a rook
 		chosen = 'p';
 
-	}  else if (isRook(updowns, updownsHoriz, paddings, minusOneCount, plusOneCount, bgToPiece)) {
+	}  else if (isRook(featuresObj.raysPerPixel, featuresObj.stats)) {
 		chosen = 'r';
-	} else if (isKing(updowns, updownsHoriz, paddings, minusOneCount, plusOneCount, bgToPiece, middleRayLen)) {
+	} else if (isKing(featuresObj.raysPerPixel, featuresObj.stats)) {
 		chosen = 'k';
 
-	} else if (isQueen(updowns, updownsHoriz, paddings, minusOneCount, plusOneCount, bgToPiece, middleRayLen)) {
+	} else if (isQueen(featuresObj.raysPerPixel, featuresObj.stats)) {
 		chosen = 'q';
 
-	} else if (isBishop(updowns, updownsHoriz, paddings, minusOneCount, plusOneCount, bgToPiece)) {
+	} else if (isBishop(featuresObj.raysPerPixel, featuresObj.stats)) {
 		chosen = 'b';
 
-	} else if (isKnight(updowns, updownsHoriz, paddings, minusOneCount, plusOneCount, bgToPiece)) {
+	} else if (isKnight(featuresObj.raysPerPixel, featuresObj.stats)) {
 		chosen = 'n';
 
 	}  else {
@@ -267,6 +280,8 @@ function resolveBestMatch(featuresObj, pieceExemplars, intensityThreshold) {
 
 	
 	//console.log(exemplarGrades);
+
+	return {chosen: pieceColor + chosen, stats: featuresObj.stats, wToB: instanceWhitesToBlacks};
 	
 
 	return {
@@ -436,7 +451,7 @@ function isEmpty(features) {
 	return false;
 
 }
-
+*/
 // From StackOverflow
 function getVariance( numArr, numOfDec ){
 	
@@ -463,13 +478,13 @@ function getAverageFromNumArr( numArr, numOfDec ){
 	}
 	return getNumWithSetDec( (sum / numArr.length ), numOfDec );
 }
-*/
+
 
 // Algorithm #2 stuff
 
 function isEmpty(features) {
 	//console.log("MEAN: " + _.mean(features))
-	return _.mean(features) > 0.44;
+	return !features || features.length < 3 || _.mean(features) > 0.74;
 
 }
 

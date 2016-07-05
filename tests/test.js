@@ -89,7 +89,7 @@ function testRays() {
 
 }
 
-//startUp();
+startUp();
 testRays();
 
 
