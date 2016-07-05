@@ -1,6 +1,8 @@
 var Promise = require('bluebird');
 var lwip = require('lwip');
 var _ = require('lodash');
+var fs = require('fs');
+var gm = require('gm');
 
 var positionConcluder = require('./positionConcluder');
 var featureAnalyzer   = require('./featureAnalyzer');
@@ -42,7 +44,9 @@ module.exports = function() {
 		},
 		// Attempts to predict a FEN position out of image
 		resolvePosition: function(imagepath) {
-			return getDesaturedImageData(imagepath)
+			//return getDesaturedImageData(imagepath)
+			return transformToBW(imagepath)
+			.then(getImageData)
 			.then(featureAnalyzer.getFeatureVectors)
 			.then(function(featureVectors) {
 				console.log("Feature vectors below");
@@ -64,6 +68,37 @@ module.exports = function() {
 
 	};
 };
+
+function transformToBW(imagepath) {
+	return new Promise(function(resolve, reject) {
+		var imagename = _.last(imagepath.split("/"))
+		var outputpath = __dirname + '/bwpositions/' + imagename;
+		var wstream = fs.createWriteStream(outputpath);
+
+		if (!wstream) return reject("No write stream");
+		
+		console.log("Test transform for: " + imagepath);
+		var rStream = fs.createReadStream(imagepath);
+
+		
+		gm(rStream).whiteThreshold(75,75,75,-1).blackThreshold(74,74,74,-1)
+		//.stream().pipe(wstream);	
+		.write(outputpath, function(err) {
+			if (err) return reject(err);
+			return resolve(outputpath);
+		});
+	});
+}
+
+function getImageData(imagepath) {
+	return new Promise(function(resolve, reject) {
+			lwip.open(imagepath, function(err, image) {
+				if (err) return reject(err);
+				resolve(image);
+			});
+	});
+
+}
 
 // Helper functions
 

@@ -314,6 +314,8 @@ function shootRay(topLeftX, topLeftY, shootingY, bgIntensity, iterations, image)
 	for (var i = 0; i < iterations; i++) {
 		var pixelIntensity = image.getPixel(topLeftX + i, topLeftY + shootingY).r;
 
+		if (pixelIntensity < 65) return i;
+
 		if (Math.abs(pixelIntensity - bgIntensity) > intensityThreshold) {
 			// We are not above background any more
 			return i;
@@ -347,6 +349,8 @@ function shootRayFromBottom(x, y, shootingOffset, bgIntensity, iterations, image
 	for (var i = 0; i < iterations; i++) {
 		var pixelIntensity = image.getPixel(xOffset, y - i).r;
 
+		if (pixelIntensity < 65) return i;
+
 		if (Math.abs(pixelIntensity - bgIntensity) > intensityThreshold) {
 			// We are not above background any more
 			return i;
@@ -366,7 +370,7 @@ function shootRaysFromTopPerPixel(x, y, bgIntensity, xIterations, maxYiterations
 		for (var j = 0; j < maxYiterations; j++) {
 			//console.log(xOffset + ", " + topLeftY + i)
 			var pixelIntensity = image.getPixel(xOffset, y + j).r;
-			if (Math.abs(pixelIntensity - bgIntensity) > intensityThreshold) {
+			if (pixelIntensity < 65) {
 				// We are not above background any more
 				lens.push(Math.round(j / maxYiterations * 100) / 100);
 				//found = true;

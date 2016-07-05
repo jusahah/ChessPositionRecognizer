@@ -2,6 +2,8 @@
 var _ = require('lodash');
 var Promise = require('bluebird');
 var positionAI = require('../positionAI/entry')();
+var gm = require('gm');
+var fs = require('fs');
 
 // Only as long as we are testing rays from here
 var featureAnalyzer   = require('../positionAI/featureAnalyzer');
@@ -15,7 +17,7 @@ var initialPosition = {
 
 var imagesToFens = [
 	// Large
-	{path: __dirname + '/testpositions/test_iso_1.jpg', fen : 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR'},
+	//{path: __dirname + '/testpositions/test_iso_1.jpg', fen : 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR'},
 	// Medium	
 	{path: __dirname + '/testpositions/test16.jpg', fen : '8/qqqq4/4k3/3p4/1QQ5/1QQK4/8/8'},
 	{path: __dirname + '/testpositions/initial.jpg', fen : 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR'},
@@ -89,17 +91,31 @@ function runTests() {
 
 function testRays() {
 
-	return positionAI.getFeatureVectors(__dirname + '/testpositions/initial.jpg')
+	return positionAI.getFeatureVectors(__dirname + '/testpositions/gm_test_output.jpg')
 	.then(function(data) {
 		console.log("---TEST RAYS---");
 		console.log(data);
 	});
+}
 
+function testImageTransformWithGM(imagepath) {
+	var outputpath = __dirname + '/testpositions/gm_test_output.jpg';
+	var wstream = fs.createWriteStream(outputpath);
+
+	if (!wstream) throw "No write stream";
+	
+	console.log("Test transform for: " + imagepath);
+	var rStream = fs.createReadStream(imagepath);
+
+	
+	gm(rStream).whiteThreshold(75,75,75,-1).blackThreshold(74,74,74,-1).stream().pipe(wstream);
 
 }
 
+//testImageTransformWithGM(__dirname + '/testpositions/initial.jpg');
+
 startUp();
-testRays();
+//testRays();
 
 
 

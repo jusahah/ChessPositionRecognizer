@@ -181,7 +181,7 @@ function resolveBestMatch(featuresObj, pieceExemplars, intensityThreshold) {
 	console.log(featuresObj);
 
 	var isRook = function(rays, stats) {
-		return stats.pieceWidth < 0.775 && stats.totalAvg < 0.235;
+		return stats.pieceWidth < 0.775 && stats.totalAvg < 0.2475;
 	}
 
 	var isPawn = function(rays, stats) {
@@ -195,7 +195,7 @@ function resolveBestMatch(featuresObj, pieceExemplars, intensityThreshold) {
 
 		var sorted = rays.sort(sortNumber);
 		var highAvg = _.mean(_.slice(sorted, 0, 4));
-		return stats.pieceWidth > 0.895 && highAvg < 0.505 && stats.deviation < 0.165; 
+		return stats.pieceWidth > 0.895 && highAvg < 0.5151 && stats.deviation < 0.165; 
 	}
 
 	var isKing = function(rays,stats) {
@@ -250,7 +250,7 @@ function resolveBestMatch(featuresObj, pieceExemplars, intensityThreshold) {
 	*/
 
 	var instanceWhitesToBlacks = featuresObj.wToB;
-	var pieceColor = featuresObj.bToNb > 0.155 ? 'b' : 'w';
+	var pieceColor = featuresObj.bToNb > 0.250 ? 'b' : 'w';
 
 	// Later abstract these into data-driven solution (map with function -> piece name)
 	if (isPawn(featuresObj.raysPerPixel, featuresObj.stats)) {
