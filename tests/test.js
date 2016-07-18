@@ -6,7 +6,8 @@ var gm = require('gm');
 var fs = require('fs');
 
 // Classifiers
-var classifier1 = require('../positionAI/api')();
+var classifier1 = require('../classifiers/chessdotcom')();
+//var classifier2 = require('../classifiers/playchessmodern')();
 
 // Only as long as we are testing rays from here
 //var featureAnalyzer   = require('../positionAI/featureAnalyzer');
