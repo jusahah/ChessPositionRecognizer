@@ -70,33 +70,40 @@ function testImageToFenConversion(obj) {
 }
 */
 
-function testImageToFenConversion(obj) {
+function runTestsForClassifier(classifier) {
 	return new Promise(function(resolve, reject) {
-		var fen = obj.fen;
-		var imagepath = obj.path;
-
-		var classifier = classifier1;
-
-		Promise.resolve(imagepath) // So we can neatly stack actual ops
-		.then(classifier.transformImage)
-		.then(classifier.getFeatureVectors)
-		.then(classifier.concludePosition)
-		.then(function(resultFen) {
-			console.log("ONE FEN RESOLVED");
-			if (fen !== resultFen) {
-				reject("Fen failed for image: " + imagepath + ", resultFen: " + resultFen);
-			} else {
-				console.log("Test SUCCESS: " + imagepath);
-				resolve();
-			}
+		Promise.resolve(classifier.getTestPositions()) // So we can neatly stack actual ops
+		.each(function(testPosition) {
+			return runPosition(testPosition.path, testPosition.fen);
 		})
-		.catch(function(err) {
-			console.log("ERROR IN POSITION RECOGNITION PROCESS");
-			console.log("CLASSIFIER WAS: " + classifier.name);
-			throw err; // Rethrow up the call stack
+		.then(function() {
+			console.log("TESTS SUCCEED FOR: " + classifier.name);
 		})
-
 	});
+
+	// Single position runner
+	function runPosition(imagepath, fen) {
+		return new Promise(function(resolve, reject) {
+			Promise.resolve(imagepath)
+			.then(classifier.transformImage)
+			.then(classifier.getFeatureVectors)
+			.then(classifier.concludePosition)
+			.then(function(resultFen) {
+				console.log("ONE FEN RESOLVED");
+				if (fen !== resultFen) {
+					reject("Fen failed for image: " + imagepath + ", resultFen: " + resultFen);
+				} else {
+					console.log("Test SUCCESS: " + imagepath);
+					resolve();
+				}
+			})
+			.catch(function(err) {
+				console.log("ERROR IN POSITION RECOGNITION PROCESS");
+				console.log("CLASSIFIER WAS: " + classifier.name);
+				throw err; // Rethrow up the call stack
+			})
+		});
+	}
 
 }
 
@@ -114,7 +121,7 @@ function startUp() {
 
 function runTests() {
 
-	Promise.resolve(imagesToFens)
+	Promise.resolve(classifier1.getTestPositions())
 	.each(testImageToFenConversion)
 	.then(function() {
 		console.log("----TESTS SUCCEED----");
@@ -157,9 +164,10 @@ function testImageTransformWithGM(imagepath) {
 
 //testImageTransformWithGM(__dirname + '/testpositions/chessbase_v2.jpg');
 
-startUp();
+//startUp();
 //testRays();
 
+runTestsForClassifier(classifier1);
 
 
 
