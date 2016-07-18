@@ -1,12 +1,15 @@
 // This script tests the AI
 var _ = require('lodash');
 var Promise = require('bluebird');
-var positionAI = require('../positionAI/entry')();
+//var positionAI = require('../positionAI/entry')();
 var gm = require('gm');
 var fs = require('fs');
 
+// Classifiers
+var classifier1 = require('../positionAI/api')();
+
 // Only as long as we are testing rays from here
-var featureAnalyzer   = require('../positionAI/featureAnalyzer');
+//var featureAnalyzer   = require('../positionAI/featureAnalyzer');
 
 // Chessbase images have 20 px margin on all sides.
 
@@ -35,7 +38,7 @@ var imagesToFens = [
 	
 
 ];
-
+/*
 function testImageToFenConversion(obj) {
 	// We need a wrapping additional promise as we
 	// may throw after resultPromise is resolved!
@@ -64,10 +67,42 @@ function testImageToFenConversion(obj) {
 	});
 	
 }
+*/
+
+function testImageToFenConversion(obj) {
+	return new Promise(function(resolve, reject) {
+		var fen = obj.fen;
+		var imagepath = obj.path;
+
+		var classifier = classifier1;
+
+		Promise.resolve(imagepath) // So we can neatly stack actual ops
+		.then(classifier.transformImage)
+		.then(classifier.getFeatureVectors)
+		.then(classifier.concludePosition)
+		.then(function(resultFen) {
+			console.log("ONE FEN RESOLVED");
+			if (fen !== resultFen) {
+				reject("Fen failed for image: " + imagepath + ", resultFen: " + resultFen);
+			} else {
+				console.log("Test SUCCESS: " + imagepath);
+				resolve();
+			}
+		})
+		.catch(function(err) {
+			console.log("ERROR IN POSITION RECOGNITION PROCESS");
+			console.log("CLASSIFIER WAS: " + classifier.name);
+			throw err; // Rethrow up the call stack
+		})
+
+	});
+
+}
 
 
 function startUp() {
-	positionAI.learnFromInitial(initialPosition.path)
+	//positionAI.learnFromInitial(initialPosition.path)
+	Promise.resolve()
 	.then(runTests)
 	.catch(function(err) {
 		console.log("Initial training failed");
@@ -88,7 +123,7 @@ function runTests() {
 		throw error;
 	});	
 }
-
+/*
 function testRays() {
 
 	return positionAI.getFeatureVectors(__dirname + '/testpositions/gm_test_output.jpg')
@@ -97,6 +132,7 @@ function testRays() {
 		console.log(data);
 	});
 }
+*/
 
 function testImageTransformWithGM(imagepath) {
 	var outputpath = __dirname + '/testpositions/gm_test_output.jpg';
@@ -108,11 +144,17 @@ function testImageTransformWithGM(imagepath) {
 	var rStream = fs.createReadStream(imagepath);
 
 	
-	gm(rStream).whiteThreshold(75,75,75,-1).blackThreshold(74,74,74,-1).stream().pipe(wstream);
+	gm(rStream)
+	.whiteThreshold(115,115,115,-1)
+	.blackThreshold(115,115,115,-1)
+	.blur(0)
+	.blackThreshold(225, 225, 225, -1)
+	.stream()
+	.pipe(wstream);
 
 }
 
-//testImageTransformWithGM(__dirname + '/testpositions/initial.jpg');
+//testImageTransformWithGM(__dirname + '/testpositions/chessbase_v2.jpg');
 
 startUp();
 //testRays();

@@ -72,7 +72,7 @@ module.exports = function() {
 function transformToBW(imagepath) {
 	return new Promise(function(resolve, reject) {
 		var imagename = _.last(imagepath.split("/"))
-		var outputpath = __dirname + '/bwpositions/' + imagename;
+		var outputpath = __dirname + '/temp/' + imagename;
 		var wstream = fs.createWriteStream(outputpath);
 
 		if (!wstream) return reject("No write stream");

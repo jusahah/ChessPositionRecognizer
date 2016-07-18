@@ -28,132 +28,6 @@ var Correlation = require('node-correlation');
 
 
 
-// Classifier state (built during program start-up)
-var pieceFeatureProbabilities = {
-
-	whitesq: {
-		w: {
-			k: {
-
-			},
-			q: {
-
-			},
-			r: {
-
-			},
-			b: {
-
-			},
-			n: {
-
-			},
-			p: {
-
-			},
-			e: /* empty*/ {
-
-			}
-
-
-
-		},
-		b: {
-			k: {
-
-			},
-			q: {
-
-			},
-			r: {
-
-			},
-			b: {
-
-			},
-			n: {
-
-			},
-			p: {
-
-			},
-			e: /* empty*/ {
-
-			}
-		}
-
-	},
-
-	blacksq: {
-		w: {
-			k: {
-
-			},
-			q: {
-
-			},
-			r: {
-
-			},
-			b: {
-
-			},
-			n: {
-
-			},
-			p: {
-
-			},
-			e: /* empty*/ {
-
-			}
-		},
-		b: {
-			k: {
-
-			},
-			q: {
-
-			},
-			r: {
-
-			},
-			b: {
-
-			},
-			n: {
-
-			},
-			p: {
-
-			},
-			e: /* empty*/ {
-
-			}			
-		}
-	}
-}
-/*
-var rook = {
-	h: {
-		[0, '>', 5],
-		[0, '<', 'last']	
-	},
-	v: {
-		[]
-	}
-}
-
-var bishop = {
-	h: {
-		[1, '<', 5],
-		[5, '>', 7]	
-	},
-	v: {
-		[2, '>', 0.7] // Goes well over the half
-	}
-}
-*/
 module.exports = {
 
 	getPosition: function(featureVectors, pieceExemplars, intensityThreshold) {
@@ -302,6 +176,31 @@ function resolveBestMatch(featuresObj, pieceExemplars, intensityThreshold) {
 
 }
 
+function resolveFen(matches) {
+
+	var chess = new Chess();
+
+	chess.clear();
+
+	//console.log(matches);
+
+	_.forOwn(matches, function(matchObj, sq) {
+		var exemp = matchObj.chosen;
+		if (exemp.length === 1) return; // Empty square
+		var piece = exemp.charAt(1);
+		var color = exemp.charAt(0);
+
+		if (!chess.put({type: piece, color: color}, sq)) {
+			throw "Fen generation failed: " + sq + " | " + JSON.stringify(exemp);
+		}
+	});
+
+	return chess.fen().split(" ")[0];
+
+}
+
+
+/*
 function resolveBestMatchBackup(featuresObj, pieceExemplars, intensityThreshold) {
 
 	// First we check if the square is empty, if it is there is no need to do more detailed matching
@@ -356,6 +255,7 @@ function resolveBestMatchBackup(featuresObj, pieceExemplars, intensityThreshold)
 
 
 }
+*/
 
 // OLD WHICH USES RAYS TO GET THE PIECE OUTER FORM
 /*
@@ -390,28 +290,7 @@ function resolveBestMatch(featuresObj, pieceExemplars, intensityThreshold) {
 }
 */
 
-function resolveFen(matches) {
 
-	var chess = new Chess();
-
-	chess.clear();
-
-	//console.log(matches);
-
-	_.forOwn(matches, function(matchObj, sq) {
-		var exemp = matchObj.chosen;
-		if (exemp.length === 1) return; // Empty square
-		var piece = exemp.charAt(1);
-		var color = exemp.charAt(0);
-
-		if (!chess.put({type: piece, color: color}, sq)) {
-			throw "Fen generation failed: " + sq + " | " + JSON.stringify(exemp);
-		}
-	});
-
-	return chess.fen().split(" ")[0];
-
-}
 
 // Algorithm #1 stuff
 // Returns how good the match is between these two vectors
@@ -452,6 +331,9 @@ function isEmpty(features) {
 
 }
 */
+
+
+/* HELPERS */
 // From StackOverflow
 function getVariance( numArr, numOfDec ){
 	
