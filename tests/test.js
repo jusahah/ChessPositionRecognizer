@@ -1,13 +1,13 @@
 // This script tests the AI
-var _ = require('lodash');
 var Promise = require('bluebird');
-//var positionAI = require('../positionAI/entry')();
-var gm = require('gm');
+var lwip = require('lwip');
+var _ = require('lodash');
 var fs = require('fs');
+var gm = require('gm');
 
 // Classifiers
 var classifier1 = require('../classifiers/Chessdotcom')();
-//var classifier2 = require('../classifiers/playchessmodern')();
+var classifier2 = require('../classifiers/PlayChessModern')();
 
 function runTestsForClassifier(classifier) {
 	return new Promise(function(resolve, reject) {
@@ -70,43 +70,169 @@ function runTests() {
 		throw error;
 	});	
 }
+*/
+
+var squaresToPieces = {
+	'h1': 'wR',
+	'g1': 'wN',
+	'f1': 'wB',
+	'e1': 'wK',
+	'd1': 'wQ',
+	'c2': 'wP',
+	'h8': 'bR',
+	'g8': 'bN',
+	'f8': 'bB',
+	'e8': 'bK',
+	'd8': 'bQ',
+	'c7': 'bP',	
+}
+
+/* TEST SKETCHBOARD STUFF */
+var getFeatureVectors = require('./getFeatureVector');
 
 function testRays() {
 
-	return positionAI.getFeatureVectors(__dirname + '/testpositions/gm_test_output.jpg')
+	return getImageData(__dirname + '/gm_test_output.jpg')
+	.then(removeBorders)
+	.tap(function(image) {
+		// Write to file so we can visually inspect the removal borders result
+		image.writeFile(__dirname + '/gm_test_output_no_borders.jpg', function() {});
+		return Promise.resolve(); // No need to wait for write to finish
+	})
+	.then(getFeatureVectors)
 	.then(function(data) {
-		console.log("---TEST RAYS---");
-		console.log(data);
+		console.log("---TEST RAYS 2---");
+		var pieceExemplars = {};
+
+		_(data).forOwn(function(value, key) {
+			if (_.has(squaresToPieces, key)) {
+				pieceExemplars[squaresToPieces[key]] = value.stats.eightAvgs;
+			}
+		});
+
+		console.log(pieceExemplars);
 	});
 }
-*/
 
-function testImageTransformWithGM(imagepath) {
-	var outputpath = __dirname + '/testpositions/gm_test_output.jpg';
-	var wstream = fs.createWriteStream(outputpath);
-
-	if (!wstream) throw "No write stream";
-	
-	console.log("Test transform for: " + imagepath);
-	var rStream = fs.createReadStream(imagepath);
-
-	
-	gm(rStream)
-	.whiteThreshold(115,115,115,-1)
-	.blackThreshold(115,115,115,-1)
-	.blur(0)
-	.blackThreshold(225, 225, 225, -1)
-	.stream()
-	.pipe(wstream);
+function getImageData(imagepath) {
+	return new Promise(function(resolve, reject) {
+			lwip.open(imagepath, function(err, image) {
+				if (err) return reject(err);
+				resolve(image);
+			});
+	});
 
 }
 
-testImageTransformWithGM(__dirname + '/classifiers/PlayChessModern/testpositions/initial.jpg');
+function testImageTransformWithGM(imagepath) {
+	return new Promise(function(resolve, reject) {
+		var outputpath = __dirname + '/gm_test_output.jpg';
+		var wstream = fs.createWriteStream(outputpath);
 
+		if (!wstream) throw "No write stream";
+		
+		console.log("Test transform for: " + imagepath);
+		var rStream = fs.createReadStream(imagepath);
+
+		var ts = 115;
+
+		gm(rStream)
+		.whiteThreshold(ts,ts,ts,-1)
+		.blackThreshold(ts,ts,ts,-1)
+		.blur(0.1)
+		.blackThreshold(235, 235, 235, -1)
+		.stream()
+		.pipe(wstream);
+
+		setTimeout(resolve, 500);
+	});
+
+
+}
+
+function removeBorders(image) {
+
+	var w = image.width() - 1;
+	var h = image.height() - 1;
+
+	var up = findUpMargin(w, h);
+	var down = findDownMargin(w, h);
+	var left = findLeftMargin(w, h);
+	var right = findRightMargin(w, h);
+
+	function findUpMargin(w, h) {
+
+		var center = Math.round(w / 2);
+		var currH = 0;
+
+		while (currH < h) {
+			var pixel = image.getPixel(center, currH);
+			if (pixel.r > 50) {
+				return currH;
+			}	
+			++currH;		
+		}
+		throw "Never hit white pixel (up)";
+	}
+	function findDownMargin(w, h) {
+
+		var center = Math.round(w / 2);
+		var currH = h;
+
+		while (currH > 0) {
+			var pixel = image.getPixel(center, currH);
+			if (pixel.r > 50) {
+				return h - currH;
+			}	
+			--currH;		
+		}
+		throw "Never hit white pixel (down)";
+	}
+	function findLeftMargin(w, h) {
+
+		var centerVert = Math.round(h / 2);
+		var currW = 0;
+
+		while (currW < w) {
+			var pixel = image.getPixel(currW, centerVert);
+			if (pixel.r > 50) {
+				return currW;
+			}	
+			++currW;		
+		}
+		throw "Never hit white pixel (left)";
+	}
+	function findRightMargin(w, h) {
+
+		var centerVert = Math.round(h / 2);
+		var currW = w;
+
+		while (currW > 0) {
+			var pixel = image.getPixel(currW, centerVert);
+			if (pixel.r > 50) {
+				return w - currW;
+			}	
+			--currW;		
+		}
+		throw "Never hit white pixel (right)";
+	}	
+
+	return new Promise(function(resolve, reject) {
+		image.extract(left, up, w - right, h - down, function(err, newimage){
+			if (err) return reject(err)
+				resolve(newimage)
+		})
+	});
+
+}
+/*
+testImageTransformWithGM(__dirname + '/../classifiers/PlayChessModern/testpositions/initial.jpg')
+.then(testRays);
+*/
 //startUp();
-//testRays();
 
-//runTestsForClassifier(classifier1);
+
+runTestsForClassifier(classifier2);
 
 
 

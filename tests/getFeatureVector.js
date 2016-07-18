@@ -1,23 +1,9 @@
-var Promise = require('bluebird');
 var lwip = require('lwip');
 var _ = require('lodash');
 
-module.exports = function(image) {
-	return new Promise(function(resolve, reject) {
-		
-		var featureVectors = getThem(image);
-		// Do your thing here
-
-		return resolve(featureVectors);
-	});
-
-}
-
-
-
 var intensityThreshold = 35;
 
-function getThem(image) {
+module.exports = function(image) {
 
 		var w = image.width();
 		console.log("Width: " + w);

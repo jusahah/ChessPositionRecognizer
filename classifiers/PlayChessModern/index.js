@@ -48,12 +48,12 @@ function getImageData(imagepath) {
 
 function getTestPositions() {
 	// Add test positions here like following:
-	/*
+	
 	var testpositions = [
 		{path: __dirname + '/testpositions/t1.jpg', fen : '8/qqqq4/4k3/3p4/1QQ5/1QQK4/8/8'},
 		{path: __dirname + '/testpositions/t2.jpg', fen : 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR'},
 	]
-	*/
+	
 
 	return testpositions;
 }
