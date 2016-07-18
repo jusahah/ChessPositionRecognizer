@@ -28,6 +28,7 @@ module.exports = function() {
 		concludePosition: concludePosition,
 
 		// Dev, debugging API part (optional)
+		name: 'PlayChess Modern pieceset',
 		getTestPositions: getTestPositions
 	}
 }
@@ -50,8 +51,9 @@ function getTestPositions() {
 	// Add test positions here like following:
 	
 	var testpositions = [
-		{path: __dirname + '/testpositions/t1.jpg', fen : '8/qqqq4/4k3/3p4/1QQ5/1QQK4/8/8'},
-		{path: __dirname + '/testpositions/t2.jpg', fen : 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR'},
+		{path: __dirname + '/testpositions/initial.jpg', fen : 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR'},
+		{path: __dirname + '/testpositions/t3.jpg', fen : '8/pp4n1/2p2kp1/1q3p2/3Q4/P7/1P2R1PP/5K2'},
+		//{path: __dirname + '/testpositions/t2.jpg', fen : 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR'},
 	]
 	
 
