@@ -3,22 +3,31 @@ var _ = require('lodash');
 var Chess = require('chess.js').Chess;
 
 
-module.exports = function(featureVectors) {
-	console.log(featureVectors);
+module.exports = {
 
-	return new Promise(function(resolve, reject) {
-		var matches = _.mapValues(featureVectors, function(featuresObj) {
-			return resolveBestMatch(featuresObj);
+	getFen: function(featureVectors) {
+		//console.log(featureVectors);
+
+		return new Promise(function(resolve, reject) {
+			var matches = _.mapValues(featureVectors, function(featuresObj) {
+				return resolveBestMatch(featuresObj);
+			});
+			
+			//console.log("MATCHES");
+			//console.log(matches);
+			
+			return resolve(resolveFen(matches));
+			
 		});
-		
-		console.log("MATCHES");
-		console.log(matches);
-		
-		return resolve(resolveFen(matches));
-		
-	});
 
+	},
+	getEmptySquares: function(liteFeatureVectors) {
+		// Only cares about finding empty squares on board
+		return _.keys(_.pickBy(liteFeatureVectors, function(isTrue) {return !!isTrue}));
+	}
 }
+
+
 
 
 
@@ -45,17 +54,31 @@ function resolveFen(matches) {
 
 }
 
+function squareEmpty(featuresObj) {
+		// Two tests for square being empty
+	if (_.has(featuresObj, 'empty')) {
+		return true;
+	}
+	
+	if (isEmpty(featuresObj.raysPerPixel)) {
+		return true;
+	}
+
+	return false;
+}
+
 
 
 function resolveBestMatch(featuresObj) {
-	console.log("FEAT");
-	console.log(featuresObj);
+	//console.log("FEAT");
+	//console.log(featuresObj);
 	var chosen = '?';
 
-	if (isEmpty(featuresObj.raysPerPixel)) {
+	if (squareEmpty(featuresObj)) {
 		return {matches: 0, exemplar: 'e', chosen: 'e', matchPerc: 1, isEmpty: true};
-	}	
-
+	}
+	
+	// Square is not empty!
 	if (featuresObj.stats.pieceWidth < 0.65) {
 		// Pawn, Rook, Bishop
 		if (featuresObj.stats.deviation > 0.20) chosen = 'p';

@@ -22,11 +22,27 @@ function runTestsForClassifier(classifier) {
 
 	// Single position runner
 	function runPosition(imagepath, fen) {
+		var start = Date.now();
 		return new Promise(function(resolve, reject) {
+			/* Taps are for profiling */
 			Promise.resolve(imagepath)
 			.then(classifier.transformImage)
+			.tap(function(image) {
+				var empties = classifier.getEmptySquares(image);
+				console.log("Empty squares map");
+				console.log(empties);
+			})			
+			.tap(function() {
+				console.log("PHASE 1: " + (Date.now() - start) + " ms")
+			})
 			.then(classifier.getFeatureVectors)
+			.tap(function() {
+				console.log("PHASE 2: " + (Date.now() - start) + " ms")
+			})			
 			.then(classifier.concludePosition)
+			.tap(function() {
+				console.log("PHASE 3: " + (Date.now() - start) + " ms")
+			})			
 			.then(function(resultFen) {
 				console.log("ONE FEN RESOLVED");
 				if (fen !== resultFen) {

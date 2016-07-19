@@ -2,16 +2,32 @@ var Promise = require('bluebird');
 var lwip = require('lwip');
 var _ = require('lodash');
 
-module.exports = function(image) {
-	return new Promise(function(resolve, reject) {
-		
-		var featureVectors = getThem(image);
-		// Do your thing here
+module.exports = {
+	forAll: function(image) {
+		return new Promise(function(resolve, reject) {
+			
+			var featureVectors = getThem(image);
+			// Do your thing here
 
-		return resolve(featureVectors);
-	});
+			return resolve(featureVectors);
+		});
+
+	},
+	// This is a lot faster version of previous one,
+	// collecting only features relevant for determining if square is empty!
+	forEmpty: function(image) {
+
+			
+			var featureVectors = getThemForEmpty(image);
+			// Do your thing here
+
+			return featureVectors;
+
+	}
 
 }
+
+
 
 
 
@@ -20,12 +36,21 @@ var intensityThreshold = 35;
 function getThem(image) {
 
 		var w = image.width();
-		console.log("Width: " + w);
-
-
 		var squares = buildSquarePixelBounds(w);
+
+		// This is the slow one (taking over 2 secs!)
 		return getFeaturesOutOfSquares(squares, image);
 	
+}
+
+function getThemForEmpty(image) {
+		var w = image.width();
+		var squares = buildSquarePixelBounds(w);	
+
+		// This is the fast one (taking milliseconds)
+		return getFeaturesForEmptySearch(squares, image);
+
+
 }
 
 
@@ -63,6 +88,30 @@ function getFeaturesOutOfSquares(squares, image) {
 	});
 }
 
+function getFeaturesForEmptySearch(squares, image) {
+	return _.mapValues(squares, function(square) {
+		return getEmptyFeatureForSquare(square, image);
+	});	
+}
+
+function getEmptyFeatureForSquare(square, image) {
+
+	var sqWidth = square.bottomright[0] - square.topleft[0];
+	var x = square.topleft[0];
+	var y = square.topleft[1];
+
+
+	var middleRayLen = shootRaysFromTop(x, y+1, Math.round(sqWidth * 0.50), 0, Math.round(sqWidth/2), image);
+
+	// Check if square empty
+	
+	if (middleRayLen >= 30) {
+		return true;
+	}
+
+	return false;
+
+}
 
 // Feature algorithm #1
 function getFeatureVectorForSquare(square, image) {
@@ -230,6 +279,12 @@ function getFeatureVectorForSquareUsingRayCasting(square, image) {
 
 	var middleRayLen = shootRaysFromTop(x, y+1, Math.round(sqWidth * 0.50), bgIntensity, Math.round(sqWidth/2), image);
 
+	// Check if square empty
+	
+	if (middleRayLen > 30) {
+		return {empty: true};
+	}
+	/*
 	// Shoots rays one by one on each vertical level and tracks when it hits piece
 	var rayLenghts = _.map(shootingLevels, function(shootingOffset) {
 		//var xDist = shootRay(x+2, y, shootingY, bgIntensity, Math.round(sqWidth/2), image);
@@ -245,8 +300,10 @@ function getFeatureVectorForSquareUsingRayCasting(square, image) {
 		return parseFloat((xDist / sqWidth).toFixed(2));
 	});
 
+	*/
 	var rayLenghtsPerPixel = shootRaysFromTopPerPixel(x+1, y+1, bgIntensity, sqWidth - 2, sqWidth - 2, image);
 
+	/*
 	var rayLenghtsBottom = _.map(shootingLevels, function(shootingOffset) {
 		//console.log("SHOOT OFFSET: " + shootingOffset);
 		//console.log("BOTTOM Y: " + bottomY);
@@ -255,13 +312,13 @@ function getFeatureVectorForSquareUsingRayCasting(square, image) {
 		// We need to normalize the width so different sized boards are handled uniformly
 		return parseFloat((yDist / sqWidth).toFixed(2));
 	});
-
+	*/
 	// Get white vs. black pixel densities
 	var whites = 1;
 	var blacks = 1;
 	var noBlacks = 1;
 	var bgs = 0;
-
+	
 	for (var i = x+1; i < x + sqWidth-2; i += 1) {
 		for (var j = y+1; j < y + sqWidth-2; j += 1) {
 			var r = image.getPixel(i, j).r;
@@ -280,7 +337,7 @@ function getFeatureVectorForSquareUsingRayCasting(square, image) {
 		};	
 	};
 
-
+	
 
 	// Get some pixel data too
 	var randomPointsArr = [];
@@ -300,7 +357,7 @@ function getFeatureVectorForSquareUsingRayCasting(square, image) {
 	});
 	*/
 
-	var bottomRays = _.filter(rayLenghtsBottom, function(rayL) {return rayL < 0.475});
+	//var bottomRays = _.filter(rayLenghtsBottom, function(rayL) {return rayL < 0.475});
 
 
 	return {

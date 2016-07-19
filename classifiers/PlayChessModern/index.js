@@ -24,8 +24,12 @@ module.exports = function() {
 		// Promise concludePosition(Array)
 
 		transformImage: transformImage,
-		getFeatureVectors: getFeatureVectors,
-		concludePosition: concludePosition,
+		getFeatureVectors: getFeatureVectors.forAll,
+		concludePosition: concludePosition.getFen,
+		getEmptySquares: function(image) {
+			var liteFeatureVectors = getFeatureVectors.forEmpty(image);
+			return concludePosition.getEmptySquares(liteFeatureVectors);
+		},
 
 		// Dev, debugging API part (optional)
 		name: 'PlayChess Modern pieceset',
@@ -53,7 +57,7 @@ function getTestPositions() {
 	var testpositions = [
 		{path: __dirname + '/testpositions/initial.jpg', fen : 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR'},
 		{path: __dirname + '/testpositions/t3.jpg', fen : '8/pp4n1/2p2kp1/1q3p2/3Q4/P7/1P2R1PP/5K2'},
-		//{path: __dirname + '/testpositions/t2.jpg', fen : 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR'},
+		{path: __dirname + '/testpositions/t2.jpg', fen : 'r2q1rk1/pp1n1ppp/2p1p3/3n4/3P4/P1PB3Q/1P1N2PP/4RRK1'},
 	]
 	
 
