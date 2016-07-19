@@ -244,7 +244,7 @@ function removeBorders(image) {
 	});
 
 }
-
+/*
 testImageTransformWithGM(__dirname + '/../classifiers/PlayChessModern/withlargeborders.jpg')
 .then(function() {
 	return getImageData(__dirname + '/gm_test_output.jpg');
@@ -255,6 +255,9 @@ testImageTransformWithGM(__dirname + '/../classifiers/PlayChessModern/withlargeb
 	return;
 	image.writeFile(__dirname + '/gm_test_large_borders_removed.jpg', function() {});
 });
+*/
+
+
 /*
 function cropBoard(image) {
 
@@ -380,7 +383,7 @@ function findStartStopPointsFromLeft(image) {
 //startUp();
 
 
-//runTestsForClassifier(classifier2);
+runTestsForClassifier(classifier2);
 
 
 

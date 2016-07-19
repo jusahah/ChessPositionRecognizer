@@ -24,6 +24,9 @@ module.exports = function() {
 		// Promise concludePosition(Array)
 
 		transformImage: transformImage,
+		transformImageNoBorders: function(image) {
+			return transformImage(image, true);
+		},
 		getFeatureVectors: getFeatureVectors.forAll,
 		concludePosition: concludePosition.getFen,
 		getEmptySquares: function(image) {

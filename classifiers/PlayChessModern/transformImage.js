@@ -4,7 +4,7 @@ var gm = require('gm');
 var _ = require('lodash');
 var lwip = require('lwip');
 
-module.exports = function(imagepath) {
+module.exports = function(imagepath, noBordersPresent) {
 	var imagename = _.last(imagepath.split("/"))
 	var outputpath = __dirname + '/../../temp/' + imagename; // Where to save transformed image	
 
@@ -29,7 +29,9 @@ module.exports = function(imagepath) {
 		});
 	})
 	.then(getImageData)
-	.then(removeBorders)
+	.then(function(image) {
+		return removeBorders(image, noBordersPresent);
+	})
 	.tap(function(image) {
 		image.writeFile(__dirname + '/no_borders.jpg', function() {});
 	})
@@ -48,7 +50,9 @@ function getImageData(imagepath) {
 
 }
 
-function removeBorders(image) {
+function removeBorders(image, noBordersPresent) {
+
+	if (noBordersPresent) return Promise.resolve(image); // No-op
 
 	var w = image.width() - 1;
 	var h = image.height() - 1;

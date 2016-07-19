@@ -16,6 +16,7 @@ var currentBoardSetup = null;
 
 module.exports = {
 	findBoardSetup: findBoardSetup,
+	resolveImageUsingBoardSetup: resolveImageUsingBoardSetup,
 	resolveImage: resolveImage,
 }
 
@@ -31,6 +32,73 @@ function findBoardSetup(imagepath) {
 	});
 }
 
+function resolveImageUsingBoardSetup(imagepath) {
+	var start = Date.now();
+	return Promise.resolve(imagepath)
+	.then(getImageData)
+	.then(function(image) {
+		return new Promise(function(resolve, reject) {
+			if (!currentBoardSetup) throw "currentBoardSetup missing!";
+			image.extract(
+				currentBoardSetup[0], 
+				currentBoardSetup[1], 
+				currentBoardSetup[2], 
+				currentBoardSetup[3], 
+				function(err, newimage){
+					if (err) return reject(err)
+					resolve(newimage)
+				})			
+		});		
+	})
+	.then(function(image) {
+		var croppedpath = __dirname + '/cropped.jpg';
+		return new Promise(function(resolve, reject) {
+			image.writeFile(croppedpath, function() {
+				resolve(croppedpath);
+			});
+		})
+	})
+	.then(classifier.transformImageNoBorders)
+	.tap(function(image) {
+		var empties = classifier.getEmptySquares(image);
+		//console.log("Empty squares");
+		//console.log(empties);
+
+		var differences = _.xor(empties, lastEmpties);
+		if (differences.length === 0) {
+			// Same position as in previous screenshot
+			// Throw here so we skip the expensive parts of promise chain
+			throw new PositionNotChanged();
+		}
+
+		// Position has changed, so save this as current
+		lastEmpties = empties;
+	})			
+	.tap(function() {
+		console.log("PHASE 1: " + (Date.now() - start) + " ms")
+	})
+	.then(classifier.getFeatureVectors)
+	.tap(function() {
+		console.log("PHASE 2: " + (Date.now() - start) + " ms")
+	})			
+	.then(classifier.concludePosition)
+	.tap(function() {
+		console.log("PHASE 3: " + (Date.now() - start) + " ms")
+	})			
+	.catch(PositionNotChanged, function(err) {
+		// Not actual error, just means position has not changed
+		console.log("POSITION HAS NOT CHANGED SINCE LAST SCREENSHOT!");
+		return true;
+
+	})
+	.catch(function(err) {
+		// General error handler
+		console.log("ERROR IN POSITION RECOGNITION PROCESS");
+		console.log("CLASSIFIER WAS: " + classifier.name);
+		throw err; // Rethrow up the call stack
+	})
+
+}
 
 function resolveImage(imagepath) {
 	var start = Date.now();
