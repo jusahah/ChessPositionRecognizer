@@ -1,16 +1,33 @@
 var Promise = require('bluebird');
 var _ = require('lodash');
+var fs = require('fs');
+var gm = require('gm');
+var lwip = require('lwip');
+
 var classifier = require('./classifiers/PlayChessModern')();
+var cropBoard = require('./findAndCropBoard');
 
 function PositionNotChanged() {}
 PositionNotChanged.prototype = Object.create(Error.prototype);
 
 // State between screenshots
 var lastEmpties = [];
+var currentBoardSetup = null;
 
-module.exports = function(imagepath) {
-	return resolveImage(imagepath).then(function(fen) {
-		console.log("FEN IS: " + fen);
+module.exports = {
+	findBoardSetup: findBoardSetup,
+	resolveImage: resolveImage,
+}
+
+function findBoardSetup(imagepath) {
+	return transformForCrop(imagepath)
+	.then(function(transformedpath) {
+		return getImageData(transformedpath);
+	})
+	.then(cropBoard.getCoords)
+	.tap(function(coords) {
+		currentBoardSetup = coords;
+		console.log("NEW BOARD SETUP!: " + JSON.stringify(coords));
 	});
 }
 
@@ -58,4 +75,41 @@ function resolveImage(imagepath) {
 		console.log("CLASSIFIER WAS: " + classifier.name);
 		throw err; // Rethrow up the call stack
 	})
+}
+
+function transformForCrop(imagepath) {
+	return new Promise(function(resolve, reject) {
+		var outputpath = __dirname + '/last_crop_transformed_image.jpg';
+		var wstream = fs.createWriteStream(outputpath);
+
+		if (!wstream) throw "No write stream available in fs";
+		
+		var rStream = fs.createReadStream(imagepath);
+
+		var ts = 115;
+
+		gm(rStream)
+		.whiteThreshold(ts,ts,ts,-1)
+		.blackThreshold(ts,ts,ts,-1)
+		.blur(0)
+		.blackThreshold(245, 245, 245, -1)
+		.stream()
+		.pipe(wstream);
+
+		setTimeout(function() {
+			resolve(outputpath);
+		}, 250);
+	});
+
+
+}
+
+function getImageData(imagepath) {
+	return new Promise(function(resolve, reject) {
+			lwip.open(imagepath, function(err, image) {
+				if (err) return reject(err);
+				resolve(image);
+			});
+	});
+
 }
