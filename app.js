@@ -31,7 +31,7 @@ function findBoardSetup(imagepath) {
 		console.log("NEW BOARD SETUP!: " + JSON.stringify(coords));
 	});
 }
-
+// Collapse this and next into mostly common code later
 function resolveImageUsingBoardSetup(imagepath) {
 	var start = Date.now();
 	return Promise.resolve(imagepath)
